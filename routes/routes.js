@@ -7,7 +7,7 @@ const router = app => {
     // Display welcome message on the root
     app.get('/', (request, response) => {
         response.send({
-            message: 'Welcome to the Node.js Express REST API!'
+            message: 'Welcome to the OneVote Restful APIs'
         });
     });
 
