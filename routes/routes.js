@@ -23,6 +23,31 @@ const router = app => {
         });
     });
 
+
+    //get election details
+    app.get('/get_election_details/:transaction_hash', (request, response) => {
+
+        const transaction_hash = request.params.transaction_hash;
+
+        web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
+
+            const contractAddress = receipt.contractAddress;
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+            
+            contract.methods.election_name().call({from : accountAddress}).then((res)=> {
+
+                response.send({
+                    'election_name' : res
+                });
+
+            }).catch( (err) =>{
+                console.log(err);
+            });
+        
+        });
+
+    });
+
     // Deploy election contract
     app.get('/deploy_contract/:election_id', (request, response) => {
 
@@ -180,40 +205,40 @@ const router = app => {
 
     });
 
-        //get all candidates of a election
-        app.get('/get_post_candidates/:transaction_hash/:post_id', (request, response) => {
+    //get all candidates of a election
+    app.get('/get_post_candidates/:transaction_hash/:post_id', (request, response) => {
 
-            const transaction_hash = request.params.transaction_hash;
-            const post_id = request.params.post_id;
-    
-            web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
-    
-                const contractAddress = receipt.contractAddress;
-                const contract = new web3.eth.Contract(contractABI, contractAddress);
-                
-                contract.methods.getCandidates().call({from : accountAddress}).then((res)=> {
-    
-                    let candidates = [];
-    
-                    for(let i=0; i<res.length; i++){
-                        
-                        if(bigToNum((res[i][2]) == post_id)){
-                            candidates.push(res[i][0]);
-                        }
-                    
-                    }
-    
-                    response.send({
-                        'candidates' : candidates
-                    });
-    
-                }).catch( (err) =>{
-                    console.log(err);
-                });
+        const transaction_hash = request.params.transaction_hash;
+        const post_id = request.params.post_id;
+
+        web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
+
+            const contractAddress = receipt.contractAddress;
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
             
+            contract.methods.getCandidates().call({from : accountAddress}).then((res)=> {
+
+                let candidates = [];
+
+                for(let i=0; i<res.length; i++){
+                    
+                    if(bigToNum((res[i][2]) == post_id)){
+                        candidates.push(res[i][0]);
+                    }
+                
+                }
+
+                response.send({
+                    'candidates' : candidates
+                });
+
+            }).catch( (err) =>{
+                console.log(err);
             });
-    
+        
         });
+
+    });
 
     function bigToNum(bigNum){
 
