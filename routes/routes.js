@@ -13,14 +13,71 @@ const router = app => {
     const accountAddress = '0x70a47E1Be460464bE8Dc17F2FDEEf2dC306f274d';
     const privateKey = Buffer.from('d051b5b1e1cda01278161f21ddd71425f00cbd8081c841231b9ad794399c18f0', 'hex');
 
-    const contractABI = [{"constant":true,"inputs":[],"name":"getCandidates","outputs":[{"components":[{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"posts","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_posts","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_date","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"candidatesCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"postsCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"candidates","outputs":[{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getPosts","outputs":[{"name":"","type":"string[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_id","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"votersCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_duration","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getVoters","outputs":[{"components":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"vote","type":"bool"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"voters","outputs":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"vote","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_voters","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_time","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"}];
-
+    const contractABI = [{"constant":true,"inputs":[],"name":"getCandidates","outputs":[{"components":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"posts","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_posts","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_date","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"candidatesCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"postsCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"candidates","outputs":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getPosts","outputs":[{"name":"","type":"string[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"postId","type":"uint256"},{"name":"candidateId","type":"uint256"},{"name":"voterId","type":"uint256"}],"name":"castVote","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[],"name":"election_id","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"votersCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_duration","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getVoters","outputs":[{"components":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"vote","type":"uint256[3]"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"voters","outputs":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_voters","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_time","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"}];
 
     // Display welcome message on the root
     app.get('/', (request, response) => {
         response.send({
             message: 'Welcome to the OneVote Restful APIs'
         });
+    });
+
+    //voter login election
+    app.get('/voter_login/:transaction_hash/:public_address', (request, response) => {
+
+        const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
+
+        web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
+
+            const contractAddress = receipt.contractAddress;
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+            
+            contract.methods.getVoters().call({from : public_address}).then((res)=> {
+
+                let check = false;
+                let voter_name;
+
+                for(let i=0; i<res.length; i++){
+                    
+                    if( res[i][2] == public_address) {
+                        check = true;
+                    }
+
+                    if(check){
+                        voter_name = res[i][0];
+                        break;
+                    }
+                
+                }
+
+                if(check){
+                    response.send({
+                        'status' : true,
+                        'msg' : 'Login Successful',
+                        'voter_name' : voter_name
+                    });
+                } else {
+                    response.send({
+                        'status' : false,
+                        'msg' : 'Voter not in voter list'
+                    });
+                }
+
+            }).catch( (err) =>{
+                response.send({
+                    'status' : false,
+                    'msg' : 'Invalid Voter Address'
+                });
+            });
+        
+        }).catch( (err) =>{
+            response.send({
+                'status' : false,
+                'msg' : 'Invalid Transaction Hash'
+            });
+        });
+
     });
 
 
@@ -34,7 +91,7 @@ const router = app => {
             const contractAddress = receipt.contractAddress;
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             
-            contract.methods.election_name().call({from : accountAddress}).then((res)=> {
+            contract.methods.election_name.call({from : accountAddress}).then((res)=> {
 
                 response.send({
                     'election_name' : res
@@ -134,7 +191,7 @@ const router = app => {
                 let candidates = [];
 
                 for(let i=0; i<res.length; i++){
-                    candidates.push(res[i][0]);
+                    candidates.push(res[i][1]);
                 }
 
                 response.send({
@@ -165,7 +222,7 @@ const router = app => {
                 let voters = [];
 
                 for(let i=0; i<res.length; i++){
-                    voters.push(res[i][0]);
+                    voters.push(res[i]);
                 }
 
                 response.send({
@@ -205,7 +262,7 @@ const router = app => {
 
     });
 
-    //get all candidates of a election
+    //get candidates of a election
     app.get('/get_post_candidates/:transaction_hash/:post_id', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -222,8 +279,8 @@ const router = app => {
 
                 for(let i=0; i<res.length; i++){
                     
-                    if(bigToNum((res[i][2]) == post_id)){
-                        candidates.push(res[i][0]);
+                    if(bigToNum((res[i][3]) == post_id)){
+                        candidates.push(res[i][1]);
                     }
                 
                 }
