@@ -8,12 +8,26 @@ const router = app => {
     const fs = require('fs');
     const solc = require('solc');
     const Tx = require('ethereumjs-tx');
+    const nodemailer = require('nodemailer');
+    const dateFormat = require('dateformat');
     const web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
 
-    const accountAddress = '0x13AB9be743BBBd271Ed766Fe20fc5c4Ed8a64F4C';
-    const privateKey = Buffer.from('8F82CAADF1B631C1AFE402805F88D4DD001B5D35ECD2CC3F49F383128433E486', 'hex');
+    const accountAddress = '0x70a47E1Be460464bE8Dc17F2FDEEf2dC306f274d';
+    const privateKey = Buffer.from('d051b5b1e1cda01278161f21ddd71425f00cbd8081c841231b9ad794399c18f0', 'hex');
 
     const contractABI = [{"constant":true,"inputs":[],"name":"getCandidates","outputs":[{"components":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"posts","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_posts","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_date","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"candidatesCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"postsCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"candidates","outputs":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getPosts","outputs":[{"name":"","type":"string[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"postId","type":"uint256"},{"name":"candidateId","type":"uint256"},{"name":"voterId","type":"uint256"}],"name":"castVote","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[],"name":"election_id","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"votersCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_duration","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getVoters","outputs":[{"components":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"vote","type":"uint256[3]"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"voters","outputs":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_voters","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_time","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"}];
+
+    var transporter = nodemailer.createTransport({
+
+        service: 'gmail',
+        
+        auth: {
+            user: 'onevote.voting@gmail.com',
+            pass: 'onevote1996'
+        }
+    
+    });
+
 
     // Display welcome message on the root
     app.get('/', (request, response) => {
@@ -21,6 +35,7 @@ const router = app => {
             message: 'Welcome to the OneVote Restful APIs'
         });
     });
+
 
     //voter login election
     app.get('/voter_login/:transaction_hash/:public_address', (request, response) => {
@@ -108,10 +123,13 @@ const router = app => {
 
     });
 
-    // Deploy election contract
-    app.get('/deploy_contract', (request, response) => {
 
-        const input = fs.readFileSync('E:/Softwares/Xampp/htdocs/onevote/Election.sol');
+    // Deploy election contract
+    app.get('/deploy_contract/:election_id', (request, response) => {
+
+        const election_id = request.params.election_id;
+
+        const input = fs.readFileSync('C:/xampp/htdocs/onevote/Election.sol');
         const output = solc.compile(input.toString(), 1);
         const bytecode = output.contracts[':Election'].bytecode;
 
@@ -135,10 +153,81 @@ const router = app => {
             //Broadcast the address
             web3.eth.sendSignedTransaction(raw, (err, txHash) =>{
 
-                    response.send({
-             
-                        'transaction_hash' : txHash
+                web3.eth.getTransactionReceipt(txHash, (err, receipt) => {
+
+                    var query = "SELECT e.*, v.voter_email FROM election e INNER JOIN voter v ON e.election_id = v.election_id WHERE e.election_id = ?"; 
+
+                    pool.query(query, election_id, (error, result) => {
+
+                        if(error){
+                            
+                            console.log(error);
+                            
+                        } else{
+
+                            let emails = "";
+                            let title = result[0]['election_title'];
+                            let date = dateFormat(result[0]['election_date'], 'dS mmmm, yyyy');
+                            let time = timeConvert(result[0]['election_time']);
+
+                            for(var i=0 ; i<result.length; i++){
+
+                                if(i != result.length-1){
+                                    
+                                    emails += result[i]['voter_email'] + ",";
+                                
+                                } else {
+                                    
+                                    emails += result[i]['voter_email'];
+                                
+                                }
+                                
+                            }
+
+                            const mailOptions = {
+                                
+                                from: 'adilsachwani@gmail.com',
+                                to: emails,
+                                subject: 'OneVote Election Details - ' + title,
+                                html: 
+                                
+                                '<p>Dear Voter,</p>' +
+                                '<p>You have been registered for voting in <b>'+ title +'</b> on <b>' + date + '</b> at <b>' + time + '</b>.</p>' +
+                                '<p>Transaction Hash is <b>' + receipt.transactionHash + '</b></p>' +
+                                '<p>You can cast your vote through OneVote Webpage which is completely secured thorugh Blockchain: http://www.localhost/onevotehome</p>' +
+                                '<footer>' +
+                                    '<div>' +
+                                        '<a target="_blank" href="http://www.localhost/onevotehome">' +
+                                            '<img src="http://neditec.org.pk/images/onevote_email_footer.jpg" style="width:100%;" border="0" alt="Null">' +
+                                        '</a>' +
+                                    '</div>' +
+                                '</footer>'
+                            
+                            };
+
+                            transporter.sendMail(mailOptions, function (err, info) {
+                        
+                                if (err) {
+                                    console.log("Hello");
+                                } else {
+                                    console.log('Email sent: ' + info.response);
+                                }
+                             });
+
+                             response.send({
+                                transaction_hash : receipt.transactionHash,
+                                contract_address : receipt.contractAddress,
+                                block_number : receipt.blockNumber,
+                                gas_used: receipt.gasUsed
+                            });
+
+                        }
+            
                     });
+                
+                }).catch( (err) =>{
+                    console.log(err);
+                });
 
             }).catch( (err) =>{
                 console.log(err);
@@ -149,6 +238,7 @@ const router = app => {
         });
     
     });
+    
 
     //get all candidates of a election
     app.get('/get_all_candidates/:transaction_hash', (request, response) => {
@@ -265,102 +355,39 @@ const router = app => {
 
     });
 
-    //  // casting vote
-    //  app.get('/cast_vote/:candidate_id/:post_id/:voter_id/:transaction_hash/:public_address/:private_address', (request, response) => {
+    //casting vote
+    app.get('/cast_vote/:candidate_id/:post_id/:voter_id/:transaction_hash/:public_address', (request, response) => {
 
-    //     const transaction_hash = request.params.transaction_hash;
-    //     const post_id = request.params.post_id;
-    //     const voter_id = request.params.voter_id;
-    //     const candidate_id = request.params.candidate_id;
-    //     const public_address = request.params.public_address;
-    //     const private_address = request.params.private_address;
+        const transaction_hash = request.params.transaction_hash;
+        const post_id = request.params.post_id;
+        const voter_id = request.params.voter_id;
+        const candidate_id = request.params.candidate_id;
+        const public_address = request.params.public_address;
 
-    //     const privateKey = Buffer.from(private_address, 'hex');
+        web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
-    //     web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
+            const contractAddress = receipt.contractAddress;
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-    //         const contractAddress = receipt.contractAddress;
-    //         const contract = new web3.eth.Contract(contractABI, contractAddress);
-           
-    //     web3.eth.getTransactionCount(accountAddress, (err, txCount) => {
-
-    //           //build the transaction
-    //             const txObject = {
-    //             nonce : web3.utils.toHex(txCount),
-    //             gasLimit : web3.utils.toHex(1000000000),
-    //             gasPrice : web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
-    //             data : contract.methods.castVote(post_id,candidate_id,voter_id).encodeABI()
-    //         }
-
-    //             //Sign the transaction
-    //             const tx = new Tx(txObject);
-    //             tx.sign(privateKey);
-    
-    //             const serializedTransaction = tx.serialize();
-    //             const raw = '0x' + serializedTransaction.toString('hex');
-
-    //                //Broadcast the address
-    //             web3.eth.sendSignedTransaction(raw, (err, txHash) =>{
-
-    //             response.send({
-         
-    //                 'vote_transaction_hash' : txHash
-    //             });
-
-    //          }).catch( (err) =>{
-    //              console.log(err);
-    //          });
-    
-
-    //      }).catch( (err) =>{
-    //         console.log(err);
-    //     });
-
-    //     }).catch( (err) =>{
-    //         console.log(err);
-    //     });
-
-    // });
-
-         // casting vote
-         app.get('/cast_vote/:candidate_id/:post_id/:voter_id/:transaction_hash/:public_address', (request, response) => {
-
-            const transaction_hash = request.params.transaction_hash;
-            const post_id = request.params.post_id;
-            const voter_id = request.params.voter_id;
-            const candidate_id = request.params.candidate_id;
-            const public_address = request.params.public_address;
-            // const private_address = request.params.private_address;
-    
-            // const privateKey = Buffer.from(private_address, 'hex');
-
-            web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
-
-                const contractAddress = receipt.contractAddress;
-                const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-                contract.methods.castVote(post_id,candidate_id,voter_id).send({from: public_address}, (error, transactionHash) => {
+            contract.methods.castVote(post_id,candidate_id,voter_id).send({from: public_address}, (error, transactionHash) => {
                     
-                    response.send({
-         
-                        'vote_transaction_hash' : transactionHash
-                    });
-
-
-                }).catch( (err) =>{
-                    console.log(err);
-                });
-
+                response.send({
             
-
+                    'vote_transaction_hash' : transactionHash
+                });
+            
             }).catch( (err) =>{
                 console.log(err);
             });
-
+    
+        }).catch( (err) =>{
+            console.log(err);
         });
 
-     //get a single candidate
-     app.get('/get_candidate/:transaction_hash/:candidate_name', (request, response) => {
+    });
+
+    //get a single candidate
+    app.get('/get_candidate/:transaction_hash/:candidate_name', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
         const candidate_name = request.params.candidate_name;
@@ -399,6 +426,19 @@ const router = app => {
 
         return web3.utils.hexToNumber(web3.utils.toHex(bigNum));
 
+    }
+
+    function timeConvert(time) {
+        // Check correct time format and split into components
+        time = time.toString ().match (/^([01]\d|2[0-3])(:)([0-5]\d)(:[0-5]\d)?$/) || [time];
+      
+        if (time.length > 1) { // If time format correct
+          time = time.slice (1);  // Remove full string match value
+          time[5] = +time[0] < 12 ? 'AM' : 'PM'; // Set AM/PM
+          time[0] = +time[0] % 12 || 12; // Adjust hours
+        }
+        
+        return time.join (''); // return adjusted time or original string
     }
 
 }
