@@ -12,8 +12,8 @@ const router = app => {
     const dateFormat = require('dateformat');
     const web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
 
-    const accountAddress = '0x13AB9be743BBBd271Ed766Fe20fc5c4Ed8a64F4C';
-    const privateKey = Buffer.from('8F82CAADF1B631C1AFE402805F88D4DD001B5D35ECD2CC3F49F383128433E486', 'hex');
+    const accountAddress = '0x3D1723387A7384C98aBFd42666568F2A3Cf3C4e7';
+    const privateKey = Buffer.from('32f67a0ea1291a58b9315a16bae0b1ca1c134a30749d5c7710f1e1df47ed88ed', 'hex');
 
     const contractABI = [{"constant":true,"inputs":[],"name":"getCandidates","outputs":[{"components":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"posts","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_posts","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_date","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"candidatesCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"postsCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"candidates","outputs":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getPosts","outputs":[{"name":"","type":"string[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"postId","type":"uint256"},{"name":"candidateId","type":"uint256"},{"name":"voterId","type":"uint256"}],"name":"castVote","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[],"name":"election_id","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"votersCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_duration","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getVoters","outputs":[{"components":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"vote","type":"uint256[2]"},{"name":"hasVoted","type":"bool"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"voters","outputs":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"hasVoted","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_voters","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_time","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}];
 
@@ -29,7 +29,7 @@ const router = app => {
     });
 
 
-    // Display welcome message on the root
+    //Display welcome message on the root
     app.get('/', (request, response) => {
         response.send({
             message: 'Welcome to the OneVote Restful APIs'
@@ -37,7 +37,7 @@ const router = app => {
     });
 
 
-    //voter login election
+    //Voter login election
     app.get('/voter_login/:transaction_hash/:public_address', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -99,7 +99,7 @@ const router = app => {
     });
 
 
-    //get election details
+    //Get election details
     app.get('/get_election_details/:transaction_hash', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -108,11 +108,46 @@ const router = app => {
 
             const contractAddress = receipt.contractAddress;
             const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+            let election_name, election_date, election_time, election_duration;
             
             contract.methods.election_name.call({from : accountAddress}).then((res)=> {
 
-                response.send({
-                    'election_name' : res
+                election_name = res;
+
+                contract.methods.election_date.call({from : accountAddress}).then((res)=> {
+                    
+                    election_date = dateFormat(res, 'dS mmmm, yyyy');
+
+                    contract.methods.election_time.call({from : accountAddress}).then((res)=> {
+                    
+                        election_time = timeConvert(res);
+
+                        contract.methods.election_duration.call({from : accountAddress}).then((res)=> {
+                    
+                            election_duration = bigToNum(res);
+
+                            response.send({
+
+                                'election_details' : {
+                                    'election_name' : election_name,
+                                    'election_date' : election_date,
+                                    'election_time' : election_time,
+                                    'election_duration' : election_duration
+                                }
+                            
+                            });
+
+                        }).catch( (err) =>{
+                            console.log(err);
+                        });
+    
+                    }).catch( (err) =>{
+                        console.log(err);
+                    });
+
+                }).catch( (err) =>{
+                    console.log(err);
                 });
 
             }).catch( (err) =>{
@@ -129,7 +164,7 @@ const router = app => {
 
         const election_id = request.params.election_id;
 
-        const input = fs.readFileSync('E:/Softwares/Xampp/htdocs/onevote/Election.sol');
+        const input = fs.readFileSync('C:/Xampp/htdocs/onevote/Election.sol');
         const output = solc.compile(input.toString(), 1);
         const bytecode = output.contracts[':Election'].bytecode;
 
@@ -215,10 +250,10 @@ const router = app => {
                              });
 
                              response.send({
-                                transaction_hash : receipt.transactionHash,
-                                contract_address : receipt.contractAddress,
-                                block_number : receipt.blockNumber,
-                                gas_used: receipt.gasUsed
+                                'transaction_hash' : receipt.transactionHash,
+                                'contract_address' : receipt.contractAddress,
+                                'block_number' : receipt.blockNumber,
+                                'gas_used' : receipt.gasUsed
                             });
 
                         }
@@ -240,7 +275,7 @@ const router = app => {
     });
     
 
-    //get all candidates of a election
+    //Get all candidates of a election
     app.get('/get_all_candidates/:transaction_hash', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -252,8 +287,21 @@ const router = app => {
             
             contract.methods.getCandidates().call({from : accountAddress}).then((res)=> {
 
+                let candidates = [];
+
+                for(let i=0; i<res.length; i++){
+                    
+                    candidates.push( {
+                        'id' : bigToNum(res[i][0]),
+                        'name' : res[i][1],
+                        'post_id' : bigToNum(res[i][3]),
+                        'vote_count' : bigToNum(res[i][2])
+                    });
+                
+                }
+
                 response.send({
-                    'candidates' : res
+                    'candidates' : candidates
                 });
 
             }).catch( (err) =>{
@@ -265,7 +313,7 @@ const router = app => {
     });
 
 
-    //get all voters of a election
+    //Get all voters of a election
     app.get('/get_all_voters/:transaction_hash', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -280,7 +328,21 @@ const router = app => {
                 let voters = [];
 
                 for(let i=0; i<res.length; i++){
-                    voters.push(res[i]);
+
+                    let votes = [];
+
+                    for(let j=0; j<res[i][3].length; j++){
+                        votes.push(bigToNum(res[i][3][j]))
+                    }
+                    
+                    voters.push( {
+                        'name' : res[i][0],
+                        'email' : res[i][1],
+                        'public_key' : res[i][2],
+                        'has_voted' : res[i][4],
+                        'votes' : votes
+                    });
+                
                 }
 
                 response.send({
@@ -296,7 +358,7 @@ const router = app => {
     });
 
 
-    //get all posts of a election
+    //Get all posts of a election
     app.get('/get_all_posts/:transaction_hash', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -320,7 +382,8 @@ const router = app => {
 
     });
 
-    //get candidates of a election
+
+    //Get candidates of a post
     app.get('/get_post_candidates/:transaction_hash/:post_id', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -355,7 +418,8 @@ const router = app => {
 
     });
 
-    //casting vote
+
+    //Casting vote
     app.get('/cast_vote/:candidate_id/:post_id/:voter_id/:transaction_hash/:public_address', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
@@ -394,8 +458,9 @@ const router = app => {
 
     });
 
-    //get a single candidate
-    app.get('/get_candidate/:transaction_hash/:candidate_name', (request, response) => {
+
+    //Get candidate by name
+    app.get('/get_candidate_by_name/:transaction_hash/:candidate_name', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
         const candidate_name = request.params.candidate_name;
@@ -428,7 +493,7 @@ const router = app => {
         });
 
     });
- 
+
 
     function bigToNum(bigNum){
 
@@ -442,7 +507,7 @@ const router = app => {
       
         if (time.length > 1) { // If time format correct
           time = time.slice (1);  // Remove full string match value
-          time[5] = +time[0] < 12 ? 'AM' : 'PM'; // Set AM/PM
+          time[5] = +time[0] < 12 ? ' AM' : ' PM'; // Set AM/PM
           time[0] = +time[0] % 12 || 12; // Adjust hours
         }
         
