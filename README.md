@@ -1,5 +1,8 @@
 # OneVoteRestfulApi
 
+<b>API Documentation:</b>  
+https://www.tinyurl.com/onevote-api-documentation  
+
 <b>Important Node Modules Used:</b>  
 1- web3 https://www.npmjs.com/package/web3  
 2- ethereumjs-tx https://www.npmjs.com/package/ethereumjs-tx  
