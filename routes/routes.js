@@ -445,8 +445,8 @@ const router = app => {
                 });
 
                 }).catch( (err) =>{
-                console.log(err);
-            });
+                    console.log(err);
+                });
             
             }).catch( (err) =>{
                 console.log(err);
@@ -562,6 +562,81 @@ const router = app => {
         });
 
     });
+
+
+    //Get transaction details
+    app.get('/get_transaction_details/:transaction_hash', (request, response) => {
+
+        const transaction_hash = request.params.transaction_hash;
+
+        web3.eth.getTransactionReceipt(transactionHash, (err, receipt) => {
+                    
+            response.send({
+        
+                'vote_transaction_hash' : receipt.transactionHash,
+                'contract_address' : receipt.to,
+                'receipt' : receipt
+            });
+
+            }).catch( (err) =>{
+                console.log(err);
+            });
+
+    });
+
+
+    //Send transaction mail
+    app.post('/send_transaction_mail', (request, response) => {
+
+        const email = request.body.email;
+        const election_name = request.body.election_name;
+        const transaction_hash = request.body.transaction_hash;
+        
+        let hashes = "";
+
+        for(let i=0; i<transaction_hash.length; i++){
+            hashes += '<br/>' + (i+1) + '- <b>' + transaction_hash[i]  + '</b>';
+        }
+
+        const mailOptions = {
+                                
+            from: 'onevote.voting@gmail.com',
+            to: email,
+            subject: 'OneVote Election Vote Casted - ' + election_name,
+            html: 
+
+            '<p>Dear Voter,</p>' +
+            '<p>Congratulations your vote(s) has been casted successfully.</p>' +
+            '<p>Transaction Hash(s) are:' + hashes + '</p>' +
+
+            '<p>You can track your vote and see the results through OneVote Web App which is completely secured thorugh Blockchain: http://www.localhost/onevotehome/results</p>' +
+            '<footer>' +
+                '<div>' +
+                    '<a target="_blank" href="http://www.localhost:81/onevotehome">' +
+                        '<img src="http://neditec.org.pk/images/onevote_email_footer.jpg" style="width:100%;" border="0" alt="Null">' +
+                    '</a>' +
+                '</div>' +
+            '</footer>'
+        
+        };
+
+        transporter.sendMail(mailOptions, function (err, info) {
+    
+            if (err) {
+                response.send({
+                    'status' : false
+                });
+            } else {
+                response.send({
+                    'status' : true
+                });
+            }
+        
+        });
+
+    });
+
+
 
 
     function bigToNum(bigNum){
