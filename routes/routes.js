@@ -535,7 +535,8 @@ const router = app => {
                         }
 
                         for(let j=0; j<candidates.length; j++){
-                            candidates[j]['vote_percentage'] = (candidates[j]['vote_count'] / vote_count) * 100;
+                            const p = (candidates[j]['vote_count'] / vote_count) * 100;
+                            candidates[j]['vote_percentage'] = parseFloat(Math.round(p * 100) / 100).toFixed(2);
                         }
 
                         results.push( {
@@ -564,24 +565,73 @@ const router = app => {
     });
 
 
-    //Get transaction details
-    app.get('/get_transaction_details/:transaction_hash', (request, response) => {
+    //Get vote details
+    app.get('/get_vote_details/:transaction_hash', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
 
-        web3.eth.getTransactionReceipt(transactionHash, (err, receipt) => {
-                    
-            response.send({
-        
-                'vote_transaction_hash' : receipt.transactionHash,
-                'contract_address' : receipt.to,
-                'receipt' : receipt
-            });
+        web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
-            }).catch( (err) =>{
+            const contract = new web3.eth.Contract(contractABI, receipt.to);
+            const public_address = receipt.from;
+            let candidateIds = [];
+            let candidates = [];
+            let votes = [];
+
+            contract.methods.getVoters().call({from : public_address}).then((res)=> {
+
+                for(let i=0; i<res.length; i++){
+
+                    if(res[i][2].toLowerCase() == public_address.toLowerCase()){
+                        for(let j=0; j<res[i][3].length; j++){
+                            candidateIds.push(bigToNum(res[i][3][j]))
+                        }
+                        break;
+                    }
+                
+                }
+
+                contract.methods.getCandidates().call({from : public_address}).then((res)=> {
+
+                    for(let i=0; i<res.length; i++){
+
+                        for(let j=0; j<candidateIds.length; j++){
+                            if(bigToNum(res[i][0]) == candidateIds[j]){
+                                candidates.push(res[i][1]);
+                            }
+                        }
+
+                    }
+                    
+                    contract.methods.getPosts().call({from : public_address}).then((res)=> {
+
+                        for(let i=0; i<res.length; i++){
+                            votes.push({
+                                'post' : res[i],
+                                'candidate' : candidates[i]
+                            })
+                        }
+
+                        response.send({
+                            'votes' : votes
+                        });
+    
+                    }).catch((err) =>{
+                        console.log(err);
+                    });
+
+                }).catch((err) =>{
+                    console.log(err);
+                });
+
+            }).catch((err) =>{
                 console.log(err);
             });
-
+        
+        }).catch( (err) =>{
+            console.log(err);
+        });
+    
     });
 
 
