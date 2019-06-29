@@ -6,7 +6,7 @@ const config = {
     user: 'root',
     password: '',
     database: 'onevote',
-    port: 3307,
+    port: 3306,
     debug: false,
     multipleStatements: true
 };

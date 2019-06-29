@@ -12,10 +12,6 @@ const router = app => {
     const dateFormat = require('dateformat');
     const web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
 
-
-    const accountAddress = '0x13AB9be743BBBd271Ed766Fe20fc5c4Ed8a64F4C';
-    const privateKey = Buffer.from('8F82CAADF1B631C1AFE402805F88D4DD001B5D35ECD2CC3F49F383128433E486', 'hex');
-
     const contractABI = [{"constant":true,"inputs":[],"name":"getCandidates","outputs":[{"components":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"posts","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_posts","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_date","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"candidatesCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"postsCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"candidates","outputs":[{"name":"cadidateId","type":"uint256"},{"name":"name","type":"string"},{"name":"voteCount","type":"uint256"},{"name":"postId","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getPosts","outputs":[{"name":"","type":"string[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"postId","type":"uint256"},{"name":"candidateId","type":"uint256"},{"name":"voterId","type":"uint256"}],"name":"castVote","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":true,"inputs":[],"name":"election_id","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"votersCount","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_duration","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getVoters","outputs":[{"components":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"vote","type":"uint256[3]"},{"name":"hasVoted","type":"bool"}],"name":"","type":"tuple[]"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"voters","outputs":[{"name":"name","type":"string"},{"name":"email","type":"string"},{"name":"public_key","type":"string"},{"name":"hasVoted","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"total_voters","outputs":[{"name":"","type":"int256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_time","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"election_name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"}];
 
     var transporter = nodemailer.createTransport({
@@ -101,9 +97,10 @@ const router = app => {
 
 
     //Get election details
-    app.get('/get_election_details/:transaction_hash', (request, response) => {
+    app.get('/get_election_details/:transaction_hash/:public_address', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
@@ -112,19 +109,19 @@ const router = app => {
 
             let election_name, election_date, election_time, election_duration;
             
-            contract.methods.election_name.call({from : accountAddress}).then((res)=> {
+            contract.methods.election_name.call({from : public_address}).then((res)=> {
 
                 election_name = res;
 
-                contract.methods.election_date.call({from : accountAddress}).then((res)=> {
+                contract.methods.election_date.call({from : public_address}).then((res)=> {
                     
                     election_date = dateFormat(res, 'dS mmmm, yyyy');
 
-                    contract.methods.election_time.call({from : accountAddress}).then((res)=> {
+                    contract.methods.election_time.call({from : public_address}).then((res)=> {
                     
                         election_time = timeConvert(res);
 
-                        contract.methods.election_duration.call({from : accountAddress}).then((res)=> {
+                        contract.methods.election_duration.call({from : public_address}).then((res)=> {
                     
                             election_duration = bigToNum(res);
 
@@ -161,15 +158,17 @@ const router = app => {
 
 
     // Deploy election contract
-    app.get('/deploy_contract/:election_id', (request, response) => {
+    app.get('/deploy_contract/:public_address/:private_key/:election_id', (request, response) => {
 
         const election_id = request.params.election_id;
+        const public_address = request.params.public_address;
+        const private_key = Buffer.from(request.params.private_key, 'hex');
 
-        const input = fs.readFileSync('E:/Softwares/Xampp/htdocs/onevote/Election.sol');
+        const input = fs.readFileSync('C:/xampp/htdocs/onevote/Election.sol');
         const output = solc.compile(input.toString(), 1);
         const bytecode = output.contracts[':Election'].bytecode;
 
-        web3.eth.getTransactionCount(accountAddress, (err, txCount) => {
+        web3.eth.getTransactionCount(public_address, (err, txCount) => {
             
             //build the transaction
             const txObject = {
@@ -181,7 +180,7 @@ const router = app => {
 
             //Sign the transaction
             const tx = new Tx(txObject);
-            tx.sign(privateKey);
+            tx.sign(private_key);
 
             const serializedTransaction = tx.serialize();
             const raw = '0x' + serializedTransaction.toString('hex');
@@ -277,16 +276,17 @@ const router = app => {
     
 
     //Get all candidates of a election
-    app.get('/get_all_candidates/:transaction_hash', (request, response) => {
+    app.get('/get_all_candidates/:transaction_hash/:public_address', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
             const contractAddress = receipt.contractAddress;
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             
-            contract.methods.getCandidates().call({from : accountAddress}).then((res)=> {
+            contract.methods.getCandidates().call({from : public_address}).then((res)=> {
 
                 let candidates = [];
 
@@ -315,16 +315,17 @@ const router = app => {
 
 
     //Get all voters of a election
-    app.get('/get_all_voters/:transaction_hash', (request, response) => {
+    app.get('/get_all_voters/:transaction_hash/:public_address', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
             const contractAddress = receipt.contractAddress;
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             
-            contract.methods.getVoters().call({from : accountAddress}).then((res)=> {
+            contract.methods.getVoters().call({from : public_address}).then((res)=> {
 
                 let voters = [];
 
@@ -360,16 +361,17 @@ const router = app => {
 
 
     //Get all posts of a election
-    app.get('/get_all_posts/:transaction_hash', (request, response) => {
+    app.get('/get_all_posts/:transaction_hash/:public_address', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
             const contractAddress = receipt.contractAddress;
             var contract = new web3.eth.Contract(contractABI, contractAddress);
             
-            contract.methods.getPosts().call({from : accountAddress}).then((res)=>{
+            contract.methods.getPosts().call({from : public_address}).then((res)=>{
             
                 response.send({
                     'posts' : res
@@ -385,9 +387,10 @@ const router = app => {
 
 
     //Get candidates of a post
-    app.get('/get_post_candidates/:transaction_hash/:post_id', (request, response) => {
+    app.get('/get_post_candidates/:transaction_hash/:public_address/:post_id', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
         const post_id = request.params.post_id;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
@@ -395,7 +398,7 @@ const router = app => {
             const contractAddress = receipt.contractAddress;
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             
-            contract.methods.getCandidates().call({from : accountAddress}).then((res)=> {
+            contract.methods.getCandidates().call({from : public_address}).then((res)=> {
 
                 let candidates = [];
 
@@ -421,13 +424,13 @@ const router = app => {
 
 
     //Casting vote
-    app.get('/cast_vote/:candidate_id/:post_id/:voter_id/:transaction_hash/:public_address', (request, response) => {
+    app.get('/cast_vote/:transaction_hash/:public_address/:candidate_id/:post_id/:voter_id', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
         const post_id = request.params.post_id;
         const voter_id = request.params.voter_id;
         const candidate_id = request.params.candidate_id;
-        const public_address = request.params.public_address;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
@@ -461,9 +464,10 @@ const router = app => {
 
 
     //Get candidate by name
-    app.get('/get_candidate_by_name/:transaction_hash/:candidate_name', (request, response) => {
+    app.get('/get_candidate_by_name/:transaction_hash/:public_address/:candidate_name', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
         const candidate_name = request.params.candidate_name;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
@@ -471,7 +475,7 @@ const router = app => {
             const contractAddress = receipt.contractAddress;
             const contract = new web3.eth.Contract(contractABI, contractAddress);
             
-            contract.methods.getCandidates().call({from : accountAddress}).then((res)=> {
+            contract.methods.getCandidates().call({from : public_address}).then((res)=> {
 
                 let candidate_id;
 
@@ -497,9 +501,10 @@ const router = app => {
 
 
     //Get election stats
-    app.get('/get_election_stats/:transaction_hash', (request, response) => {
+    app.get('/get_election_stats/:transaction_hash/:public_address', (request, response) => {
 
         const transaction_hash = request.params.transaction_hash;
+        const public_address = request.params.public_address;
 
         web3.eth.getTransactionReceipt(transaction_hash, (err, receipt) => {
 
@@ -508,11 +513,11 @@ const router = app => {
 
             let results = [];
             
-            contract.methods.getPosts().call({from : accountAddress}).then((res)=> {
+            contract.methods.getPosts().call({from : public_address}).then((res)=> {
 
                 let posts = res;
 
-                contract.methods.getCandidates().call({from : accountAddress}).then((res)=> {
+                contract.methods.getCandidates().call({from : public_address}).then((res)=> {
 
                     for(let i=0; i<posts.length; i++){
 
