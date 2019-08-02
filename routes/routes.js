@@ -228,6 +228,8 @@ const router = app => {
                 
             } else{
 
+                console.log(result);
+
                 let emails = "";
                 let title = result[0]['election_title'];
                 let date = dateFormat(result[0]['election_date'], 'dS mmmm, yyyy');

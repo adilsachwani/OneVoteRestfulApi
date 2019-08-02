@@ -1,6 +1,6 @@
 // Require packages and set the port
 const express = require('express');
-const port = 3002;
+const port = 3000;
 const bodyParser = require('body-parser');
 const routes = require('./routes/routes')
 const app = express();
@@ -20,8 +20,10 @@ app.use(function(req, res, next) {
 routes(app);
 
 // Start the server
-const server = app.listen(port, (error) => {
+const server = app.listen(process.env.PORT || port, (error) => {
+    
     if (error) return console.log(`Error: ${error}`);
-
+    
     console.log(`Server listening on port ${server.address().port}`);
+
 });

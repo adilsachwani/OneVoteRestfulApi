@@ -2,10 +2,10 @@ const mysql = require('mysql');
 
 // Set database connection credentials
 const config = {
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'onevote',
+    host: 'remotemysql.com',
+    user: '5hlRzk0EyL',
+    password: '15NeiDa8ep',
+    database: '5hlRzk0EyL',
     port: 3306,
     debug: false,
     multipleStatements: true
