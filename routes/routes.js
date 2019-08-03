@@ -172,10 +172,10 @@ const router = app => {
         Request(url).pipe(fs.createWriteStream("Election.sol"));
 
         response.send({
-            status : "true"
+            'status' : true
         });
     
-+    });
+    });
 
 
     // Deploy election contract
@@ -701,14 +701,6 @@ const router = app => {
             console.log(err);
         });
     
-    });
-
-    //Send vote transaction mail
-    app.post('/send_file', (request, response) => {
-
-        const contract = request.files.contract;
-        console.log(contract);
-
     });
 
 
