@@ -10,6 +10,7 @@ const router = app => {
     const Tx = require('ethereumjs-tx');
     const nodemailer = require('nodemailer');
     const dateFormat = require('dateformat');
+    const Request = require('request');
     const url = "https://rinkeby.infura.io/v3/a2001c25b0d844b195b77d6aaf89074f";
     const web3 = new Web3(new Web3.providers.HttpProvider(url));
     
@@ -164,12 +165,26 @@ const router = app => {
 
 
     // Deploy election contract
+    app.get('/send_file', (request, response) => {
+
+        const url = 'http://www.icoderslab.com/Api/HospitalApp/public/onevote/Election.sol';
+
+        Request(url).pipe(fs.createWriteStream("Election.sol"));
+
+        response.send({
+            status : "true"
+        });
+    
++    });
+
+
+    // Deploy election contract
     app.get('/deploy_contract/:public_address/:private_key', (request, response) => {
 
         const public_address = request.params.public_address;
         const private_key = Buffer.from(request.params.private_key, 'hex');
 
-        const input = fs.readFileSync('http://www.icoderslab.com/Api/HospitalApp/public/onevote/Election.sol');
+        const input = fs.readFileSync('Election.sol');
         const output = solc.compile(input.toString(), 1);
         const bytecode = output.contracts[':Election'].bytecode;
 
@@ -686,6 +701,14 @@ const router = app => {
             console.log(err);
         });
     
+    });
+
+    //Send vote transaction mail
+    app.post('/send_file', (request, response) => {
+
+        const contract = request.files.contract;
+        console.log(contract);
+
     });
 
 
