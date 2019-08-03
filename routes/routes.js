@@ -169,7 +169,7 @@ const router = app => {
         const public_address = request.params.public_address;
         const private_key = Buffer.from(request.params.private_key, 'hex');
 
-        const input = fs.readFileSync('C:/xampp/htdocs/onevote/Election.sol');
+        const input = fs.readFileSync('http://www.icoderslab.com/Api/HospitalApp/public/onevote/Election.sol');
         const output = solc.compile(input.toString(), 1);
         const bytecode = output.contracts[':Election'].bytecode;
 
@@ -259,11 +259,11 @@ const router = app => {
                     '<p>Dear Voter,</p>' +
                     '<p>You have been registered for voting in <b>'+ title +'</b> on <b>' + date + '</b> at <b>' + time + '</b>.</p>' +
                     '<p>Transaction Hash is <b>' + transaction_hash + '</b></p>' +
-                    '<p>You can cast your vote through OneVote Webpage which is completely secured thorugh Blockchain: http://www.localhost/onevotehome</p>' +
+                    '<p>You can cast your vote through OneVote Webpage which is completely secured thorugh Blockchain: http://www.icoderslab.com/Api/HospitalApp/public/onevote</p>' +
                     '<footer>' +
                         '<div>' +
-                            '<a target="_blank" href="http://www.localhost/onevote">' +
-                                '<img src="http://neditec.org.pk/images/onevote_email_footer.jpg" style="width:100%;" border="0" alt="Null">' +
+                            '<a target="_blank" href="http://www.icoderslab.com/Api/HospitalApp/public/onevote">' +
+                                '<img src="http://www.icoderslab.com/Api/HospitalApp/public/onevote/img/onevote_email_footer.jpg" style="width:100%;" border="0" alt="Null">' +
                             '</a>' +
                         '</div>' +
                     '</footer>'
@@ -713,11 +713,11 @@ const router = app => {
             '<p>Congratulations your vote(s) has been casted successfully.</p>' +
             '<p>Transaction Hash(s) are:' + hashes + '</p>' +
 
-            '<p>You can track your vote and see the results through OneVote Web App which is completely secured thorugh Blockchain: http://www.localhost/onevote/result.html</p>' +
+            '<p>You can track your vote and see the results through OneVote Web App which is completely secured thorugh Blockchain: http://www.icoderslab.com/Api/HospitalApp/public/onevote</p>' +
             '<footer>' +
                 '<div>' +
-                    '<a target="_blank" href="http://www.localhost/onevote/vote.html">' +
-                        '<img src="http://neditec.org.pk/images/onevote_email_footer.jpg" style="width:100%;" border="0" alt="Null">' +
+                    '<a target="_blank" href="http://www.icoderslab.com/Api/HospitalApp/public/onevote">' +
+                        '<img src="http://www.icoderslab.com/Api/HospitalApp/public/onevote/img/onevote_email_footer.jpg" style="width:100%;" border="0" alt="Null">' +
                     '</a>' +
                 '</div>' +
             '</footer>'
